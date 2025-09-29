@@ -1,0 +1,133 @@
+Bilkul 👌 — jo tumne likha hai usme sirf **Kind aur kubectl** installation hai, lekin beech ka sabse important prerequisite **Docker install + system setup (modules, sysctl, swap off)** missing hai.
+Kind cluster Docker containers ke andar banta hai, isliye Docker ke bina ye chalega hi nahi.
+
+Chalo main tumhe **Part 7 – Setup Kind and Kubectl (Ubuntu Linux, t2.small instance)** ka complete step-by-step script deta hoon (as per official docs + required prerequisites):
+
+---
+
+# Part 7 – Setup Kind and Kubectl (Ubuntu Linux on t2.small)
+
+### Step 0: System Update & Required Tools
+
+```bash
+sudo apt-get update
+sudo apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release conntrack
+```
+
+---
+
+### Step 1: Install Docker (required for Kind)
+
+```bash
+# Add Docker’s official GPG key and repo
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] \
+  https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# Install Docker
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+```
+
+---
+
+### Step 2: Configure Docker (recommended for Kubernetes)
+
+```bash
+cat <<EOF | sudo tee /etc/docker/daemon.json
+{
+  "exec-opts": ["native.cgroupdriver=systemd"],
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "100m"
+  },
+  "storage-driver": "overlay2"
+}
+EOF
+
+sudo systemctl enable docker
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+```
+
+---
+
+### Step 3: Networking Modules & Sysctl Settings
+
+```bash
+# Load kernel modules
+echo 'br_netfilter' | sudo tee /etc/modules-load.d/br_netfilter.conf
+sudo modprobe br_netfilter
+
+# Add sysctl settings
+cat <<EOF | sudo tee /etc/sysctl.d/kubernetes.conf
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables  = 1
+net.ipv4.ip_forward                 = 1
+EOF
+
+# Apply
+sudo sysctl --system
+```
+
+---
+
+### Step 4: Disable Swap (Kubernetes requirement)
+
+```bash
+sudo swapoff -a
+# To keep swap off after reboot
+sudo sed -i '/\sswap\s/s/^/#/' /etc/fstab
+```
+
+---
+
+### Step 5: Add User to Docker Group (optional, avoids sudo)
+
+```bash
+sudo usermod -aG docker $USER
+newgrp docker
+```
+
+---
+
+### Step 6: Install **Kind** (official latest binary)
+
+```bash
+curl -Lo ./kind https://kind.sigs.k8s.io/dl/latest/kind-linux-amd64
+chmod +x ./kind
+sudo mv ./kind /usr/local/bin/kind
+kind --version
+```
+
+---
+
+### Step 7: Install **kubectl** (official stable release)
+
+```bash
+curl -LO "https://dl.k8s.io/release/$(curl -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+chmod +x kubectl
+sudo mv kubectl /usr/local/bin/
+kubectl version --client --short
+```
+
+---
+
+### Step 8: Verify Setup
+
+```bash
+docker run --rm hello-world         # check Docker works
+kind create cluster --name demo     # create test cluster
+kubectl get nodes                   # check cluster nodes
+```
+
+---
+
+✅ Ab tumhara **t2.small instance** ekdum ready hai Kind + kubectl ke saath. Ye instance pe 2 GB RAM hone ki wajah se ek demo/test Kind cluster comfortably chal jayega.
+
+---
+
+👉 Kya chaho main tumhare liye ek **ready-to-run bash script** bana du jo ye saare steps automatically ek saath execute kar de?
