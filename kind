@@ -1,11 +1,5 @@
-Bilkul 👌 — jo tumne likha hai usme sirf **Kind aur kubectl** installation hai, lekin beech ka sabse important prerequisite **Docker install + system setup (modules, sysctl, swap off)** missing hai.
-Kind cluster Docker containers ke andar banta hai, isliye Docker ke bina ye chalega hi nahi.
 
-Chalo main tumhe **Part 7 – Setup Kind and Kubectl (Ubuntu Linux, t2.small instance)** ka complete step-by-step script deta hoon (as per official docs + required prerequisites):
-
----
-
-# Part 7 – Setup Kind and Kubectl (Ubuntu Linux on t2.small)
+Setup Kind and Kubectl (Ubuntu Linux on t2.small)
 
 ### Step 0: System Update & Required Tools
 
@@ -123,11 +117,3 @@ docker run --rm hello-world         # check Docker works
 kind create cluster --name demo     # create test cluster
 kubectl get nodes                   # check cluster nodes
 ```
-
----
-
-✅ Ab tumhara **t2.small instance** ekdum ready hai Kind + kubectl ke saath. Ye instance pe 2 GB RAM hone ki wajah se ek demo/test Kind cluster comfortably chal jayega.
-
----
-
-👉 Kya chaho main tumhare liye ek **ready-to-run bash script** bana du jo ye saare steps automatically ek saath execute kar de?
