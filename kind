@@ -1,36 +1,22 @@
+Setup Kind and Kubectl (Ubuntu Linux)
 
-Setup Kind and Kubectl (Ubuntu Linux on t2.small)
 
-### Step 0: System Update & Required Tools
+Step 0: System Update & Required Tools
+Run these commands to update the system and install prerequisites:
 
-```bash
 sudo apt-get update
 sudo apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release conntrack
-```
 
----
+Step 1: Install Docker (required for Kind)
+Add Docker’s official GPG key and repository, then install Docker:
 
-### Step 1: Install Docker (required for Kind)
-
-```bash
-# Add Docker’s official GPG key and repo
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] \
-  https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-# Install Docker
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 sudo apt-get update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io
-```
 
----
+Step 2: Configure Docker (recommended for Kubernetes)
 
-### Step 2: Configure Docker (recommended for Kubernetes)
-
-```bash
 cat <<EOF | sudo tee /etc/docker/daemon.json
 {
   "exec-opts": ["native.cgroupdriver=systemd"],
@@ -41,79 +27,48 @@ cat <<EOF | sudo tee /etc/docker/daemon.json
   "storage-driver": "overlay2"
 }
 EOF
-
 sudo systemctl enable docker
 sudo systemctl daemon-reload
 sudo systemctl restart docker
-```
 
----
 
-### Step 3: Networking Modules & Sysctl Settings
+Step 3: Networking Modules & Sysctl Settings
 
-```bash
-# Load kernel modules
 echo 'br_netfilter' | sudo tee /etc/modules-load.d/br_netfilter.conf
 sudo modprobe br_netfilter
-
-# Add sysctl settings
 cat <<EOF | sudo tee /etc/sysctl.d/kubernetes.conf
 net.bridge.bridge-nf-call-ip6tables = 1
 net.bridge.bridge-nf-call-iptables  = 1
 net.ipv4.ip_forward                 = 1
 EOF
-
-# Apply
 sudo sysctl --system
-```
 
----
+Step 4: Disable Swap (Kubernetes requirement)
 
-### Step 4: Disable Swap (Kubernetes requirement)
-
-```bash
 sudo swapoff -a
-# To keep swap off after reboot
 sudo sed -i '/\sswap\s/s/^/#/' /etc/fstab
-```
 
----
+Step 5: Add User to Docker Group (optional)
 
-### Step 5: Add User to Docker Group (optional, avoids sudo)
-
-```bash
 sudo usermod -aG docker $USER
 newgrp docker
-```
 
----
+Step 6: Install Kind (official latest binary)
 
-### Step 6: Install **Kind** (official latest binary)
-
-```bash
 curl -Lo ./kind https://kind.sigs.k8s.io/dl/latest/kind-linux-amd64
 chmod +x ./kind
 sudo mv ./kind /usr/local/bin/kind
 kind --version
-```
 
----
+Step 7: Install kubectl (official stable release)
 
-### Step 7: Install **kubectl** (official stable release)
-
-```bash
 curl -LO "https://dl.k8s.io/release/$(curl -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 chmod +x kubectl
 sudo mv kubectl /usr/local/bin/
 kubectl version --client --short
-```
 
----
+Step 8: Verify Setup
 
-### Step 8: Verify Setup
-
-```bash
-docker run --rm hello-world         # check Docker works
-kind create cluster --name demo     # create test cluster
-kubectl get nodes                   # check cluster nodes
-```
+docker run --rm hello-world
+kind create cluster --name demo
+kubectl get nodes
